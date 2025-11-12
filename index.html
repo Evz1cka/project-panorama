@@ -10,6 +10,26 @@
 </head>
 <body class="multiple-scenes ">
 
+<div id="mainMenu" class="menu-overlay" role="dialog" aria-modal="true" aria-labelledby="menuTitle" aria-hidden="false">
+  <div class="menu-card" id="mainMenuCard">
+    <h1 class="menu-title" id="menuTitle">Виртуальный тур</h1>
+    <p class="menu-subtitle">Введите данные для входа, чтобы начать экскурсию.</p>
+    <div id="profileSection" class="profile-section" hidden>
+      <h2 class="profile-title">Сохранённые профили</h2>
+      <div id="profileList" class="profile-list" role="list"></div>
+      <button type="button" id="profileReset" class="profile-reset">Войти под другим именем</button>
+    </div>
+    <form id="loginForm" class="login-form" aria-describedby="loginError">
+      <label class="login-label" for="loginInput">Логин</label>
+      <input id="loginInput" class="login-input" type="text" name="login" autocomplete="username" required>
+      <label class="login-label" for="passwordInput">Пароль</label>
+      <input id="passwordInput" class="login-input" type="password" name="password" autocomplete="current-password" required>
+      <button type="submit" class="login-submit">Войти</button>
+      <p id="loginError" class="login-error" aria-live="polite"></p>
+    </form>
+  </div>
+</div>
+
 <div id="pano"></div>
 
 <div id="sceneList">

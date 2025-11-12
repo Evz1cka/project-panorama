@@ -28,6 +28,215 @@ html, body {
   color: #fff;
 }
 
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(16, 24, 40, 0.95), rgba(22, 30, 46, 0.95));
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.menu-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.menu-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border-radius: 18px;
+  background: rgba(13, 21, 34, 0.92);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.menu-card.shake {
+  animation: menu-shake 0.4s ease;
+}
+
+@keyframes menu-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  50% { transform: translateX(8px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+
+.menu-title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.menu-subtitle {
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.profile-section {
+  margin-bottom: 24px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(15, 24, 38, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.profile-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(8, 14, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-button {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(71, 154, 255, 0.18);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.profile-button:hover,
+.profile-button:focus {
+  background: rgba(71, 154, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.profile-remove {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.profile-remove:hover,
+.profile-remove:focus {
+  background: rgba(255, 107, 107, 0.85);
+  transform: scale(1.05);
+}
+
+.profile-reset {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.profile-reset:hover,
+.profile-reset:focus {
+  background: rgba(71, 154, 255, 0.15);
+  color: #fff;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-label {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(7, 12, 20, 0.9);
+  color: #fff;
+  font-size: 16px;
+  -moz-user-select: text;
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: rgba(71, 154, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(71, 154, 255, 0.25);
+}
+
+.login-submit {
+  padding: 14px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, #479aff, #6c6cff);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-submit:hover,
+.login-submit:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(76, 140, 255, 0.35);
+}
+
+.login-error {
+  min-height: 20px;
+  margin: 0;
+  font-size: 14px;
+  color: #ff6b6b;
+  text-align: center;
+}
+
 a, a:hover, a:active, a:visited {
   text-decoration: none;
   color: inherit;
