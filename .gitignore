@@ -1,0 +1,25 @@
+# Системные файлы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VSCode и IDE
+.vscode
+.idea
+
+# Логи
+.log
+
+# Python (если ты запускаешь локальный сервер)
+__pycache__
+.pyc
+
+# Node (если вдруг добавишь npm)
+node_modules
+
+# Временные
+.tmp
+.swp
+
+# Если панорамы занимают много места — можешь исключить их
+# tiles
