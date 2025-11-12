@@ -131,7 +131,7 @@
     var minFov = 35 * Math.PI / 180;
     var maxVerticalFov = 100 * Math.PI / 180;
     var maxHorizontalFov = 120 * Math.PI / 180;
-    var limiter = composeViewLimiters(
+    var limiter = Marzipano.util.compose(
       Marzipano.RectilinearView.limit.resolution(data.faceSize),
       Marzipano.RectilinearView.limit.vfov(minFov, maxVerticalFov),
       Marzipano.RectilinearView.limit.hfov(minFov, maxHorizontalFov),
