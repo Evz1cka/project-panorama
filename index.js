@@ -103,6 +103,10 @@
     document.body.classList.add('tooltip-fallback');
   }
 
+  if (data.settings.viewControlButtons) {
+    document.body.classList.add('view-control-buttons');
+  }
+
   // Viewer options.
   var viewerOpts = {
     controls: {
@@ -124,7 +128,15 @@
       { cubeMapPreviewUrl: urlPrefix + "/" + data.id + "/preview.jpg" });
     var geometry = new Marzipano.CubeGeometry(data.levels);
 
-    var limiter = Marzipano.RectilinearView.limit.traditional(data.faceSize, 100*Math.PI/180, 120*Math.PI/180);
+    var minFov = 35 * Math.PI / 180;
+    var maxVerticalFov = 100 * Math.PI / 180;
+    var maxHorizontalFov = 120 * Math.PI / 180;
+    var limiter = Marzipano.util.compose(
+      Marzipano.RectilinearView.limit.resolution(data.faceSize),
+      Marzipano.RectilinearView.limit.vfov(minFov, maxVerticalFov),
+      Marzipano.RectilinearView.limit.hfov(minFov, maxHorizontalFov),
+      Marzipano.RectilinearView.limit.pitch(-Math.PI / 2, Math.PI / 2)
+    );
     var view = new Marzipano.RectilinearView(data.initialViewParameters, limiter);
 
     var scene = viewer.createScene({
