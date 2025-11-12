@@ -103,6 +103,10 @@
     document.body.classList.add('tooltip-fallback');
   }
 
+  if (data.settings.viewControlButtons) {
+    document.body.classList.add('view-control-buttons');
+  }
+
   // Viewer options.
   var viewerOpts = {
     controls: {
@@ -124,7 +128,12 @@
       { cubeMapPreviewUrl: urlPrefix + "/" + data.id + "/preview.jpg" });
     var geometry = new Marzipano.CubeGeometry(data.levels);
 
-    var limiter = Marzipano.RectilinearView.limit.traditional(data.faceSize, 100*Math.PI/180, 120*Math.PI/180);
+    // Понижаем минимальный угол обзора, чтобы разрешить ощутимый зум.
+    var limiter = Marzipano.RectilinearView.limit.traditional(
+      data.faceSize,
+      35 * Math.PI / 180,
+      120 * Math.PI / 180
+    );
     var view = new Marzipano.RectilinearView(data.initialViewParameters, limiter);
 
     var scene = viewer.createScene({
