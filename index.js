@@ -29,6 +29,26 @@
   var sceneListToggleElement = document.querySelector('#sceneListToggle');
   var autorotateToggleElement = document.querySelector('#autorotateToggle');
   var fullscreenToggleElement = document.querySelector('#fullscreenToggle');
+  var mainMenuElement = document.querySelector('#mainMenu');
+  var mainMenuCardElement = document.querySelector('#mainMenuCard');
+  var loginFormElement = document.querySelector('#loginForm');
+  var loginInputElement = document.querySelector('#loginInput');
+  var passwordInputElement = document.querySelector('#passwordInput');
+  var loginErrorElement = document.querySelector('#loginError');
+
+  if (mainMenuElement) {
+    mainMenuElement.setAttribute('aria-hidden', 'false');
+  }
+
+  if (loginInputElement) {
+    loginInputElement.focus();
+  }
+
+  if (mainMenuCardElement) {
+    mainMenuCardElement.addEventListener('animationend', function() {
+      mainMenuCardElement.classList.remove('shake');
+    });
+  }
 
   // Detect desktop or mobile mode.
   if (window.matchMedia) {
@@ -69,6 +89,9 @@
 
   // Initialize viewer.
   var viewer = new Marzipano.Viewer(panoElement, viewerOpts);
+
+  var isAuthorized = false;
+  var currentScene = null;
 
   // Create scenes.
   var scenes = data.scenes.map(function(data) {
@@ -118,7 +141,12 @@
   }
 
   // Set handler for autorotate toggle.
-  autorotateToggleElement.addEventListener('click', toggleAutorotate);
+  autorotateToggleElement.addEventListener('click', function() {
+    if (!isAuthorized) {
+      return;
+    }
+    toggleAutorotate();
+  });
 
   // Set up fullscreen mode, if supported.
   if (screenfull.enabled && data.settings.fullscreenButton) {
@@ -138,7 +166,12 @@
   }
 
   // Set handler for scene list toggle.
-  sceneListToggleElement.addEventListener('click', toggleSceneList);
+  sceneListToggleElement.addEventListener('click', function() {
+    if (!isAuthorized) {
+      return;
+    }
+    toggleSceneList();
+  });
 
   // Start with the scene list open on desktop.
   if (!document.body.classList.contains('mobile')) {
@@ -149,7 +182,10 @@
   scenes.forEach(function(scene) {
     var el = document.querySelector('#sceneList .scene[data-id="' + scene.data.id + '"]');
     el.addEventListener('click', function() {
-      switchScene(scene);
+      if (!isAuthorized) {
+        return;
+      }
+      switchScene(scene, { forceInitialView: true, keepCurrentView: false });
       // On mobile, hide scene list after selecting a scene.
       if (document.body.classList.contains('mobile')) {
         hideSceneList();
@@ -179,16 +215,54 @@
   controls.registerMethod('outElement',   new Marzipano.ElementPressControlMethod(viewOutElement, 'zoom',  velocity, friction), true);
 
   function sanitize(s) {
-    return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;');
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
-  function switchScene(scene) {
+  function switchScene(scene, options) {
+    options = options || {};
     stopAutorotate();
-    scene.view.setParameters(scene.data.initialViewParameters);
+    var forceInitialView = !!options.forceInitialView;
+    var keepCurrentView = forceInitialView ? false :
+      (typeof options.keepCurrentView !== 'undefined' ? options.keepCurrentView : currentScene !== null);
+
+    if (keepCurrentView) {
+      var currentViewParameters = getCurrentViewParameters();
+      if (currentViewParameters) {
+        scene.view.setParameters(currentViewParameters);
+      } else {
+        scene.view.setParameters(cloneInitialViewParameters(scene));
+      }
+    } else {
+      scene.view.setParameters(cloneInitialViewParameters(scene));
+    }
     scene.scene.switchTo();
+    currentScene = scene;
     startAutorotate();
     updateSceneName(scene);
     updateSceneList(scene);
+  }
+
+  function cloneInitialViewParameters(scene) {
+    var initial = scene.data.initialViewParameters || {};
+    return {
+      yaw: typeof initial.yaw === 'number' ? initial.yaw : 0,
+      pitch: typeof initial.pitch === 'number' ? initial.pitch : 0,
+      fov: typeof initial.fov === 'number' ? initial.fov : Math.PI / 2
+    };
+  }
+
+  function getCurrentViewParameters() {
+    if (!currentScene) {
+      return null;
+    }
+    return {
+      yaw: currentScene.view.yaw(),
+      pitch: currentScene.view.pitch(),
+      fov: currentScene.view.fov()
+    };
   }
 
   function updateSceneName(scene) {
@@ -222,6 +296,10 @@
   }
 
   function startAutorotate() {
+    if (!isAuthorized) {
+      viewer.setIdleMovement(Infinity);
+      return;
+    }
     if (!autorotateToggleElement.classList.contains('enabled')) {
       return;
     }
@@ -265,7 +343,13 @@
 
     // Add click event handler.
     wrapper.addEventListener('click', function() {
-      switchScene(findSceneById(hotspot.target));
+      if (!isAuthorized) {
+        return;
+      }
+      var targetScene = findSceneById(hotspot.target);
+      if (targetScene) {
+        switchScene(targetScene, { keepCurrentView: true });
+      }
     });
 
     // Prevent touch and scroll events from reaching the parent element.
@@ -386,7 +470,41 @@
     return null;
   }
 
+  if (loginFormElement) {
+    loginFormElement.addEventListener('submit', function(event) {
+      event.preventDefault();
+      var login = loginInputElement.value.trim();
+      var password = passwordInputElement.value;
+      if (login === 'admin' && password === 'student') {
+        isAuthorized = true;
+        document.body.classList.add('authorized');
+        if (mainMenuElement) {
+          mainMenuElement.classList.add('hidden');
+          mainMenuElement.setAttribute('aria-hidden', 'true');
+        }
+        if (loginErrorElement) {
+          loginErrorElement.textContent = '';
+        }
+        loginFormElement.reset();
+        startAutorotate();
+      } else {
+        if (loginErrorElement) {
+          loginErrorElement.textContent = 'Неверный логин или пароль. Попробуйте ещё раз.';
+        }
+        if (passwordInputElement) {
+          passwordInputElement.value = '';
+          passwordInputElement.focus();
+        }
+        if (mainMenuCardElement) {
+          mainMenuCardElement.classList.remove('shake');
+          void mainMenuCardElement.offsetWidth;
+          mainMenuCardElement.classList.add('shake');
+        }
+      }
+    });
+  }
+
   // Display the initial scene.
-  switchScene(scenes[0]);
+  switchScene(scenes[0], { forceInitialView: true, keepCurrentView: false });
 
 })();
