@@ -249,6 +249,20 @@
   controls.registerMethod('inElement',    new Marzipano.ElementPressControlMethod(viewInElement,  'zoom', -velocity, friction), true);
   controls.registerMethod('outElement',   new Marzipano.ElementPressControlMethod(viewOutElement, 'zoom',  velocity, friction), true);
 
+  function composeViewLimiters() {
+    var limiters = Array.prototype.slice.call(arguments);
+    return function(params) {
+      var currentParams = params;
+      for (var i = 0; i < limiters.length; i++) {
+        var result = limiters[i](currentParams);
+        if (typeof result !== 'undefined') {
+          currentParams = result;
+        }
+      }
+      return currentParams;
+    };
+  }
+
   function sanitize(s) {
     return String(s)
       .replace(/&/g, '&amp;')
