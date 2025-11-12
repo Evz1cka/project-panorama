@@ -252,10 +252,14 @@
   function composeViewLimiters() {
     var limiters = Array.prototype.slice.call(arguments);
     return function(params) {
+      var currentParams = params;
       for (var i = 0; i < limiters.length; i++) {
-        params = limiters[i](params);
+        var result = limiters[i](currentParams);
+        if (typeof result !== 'undefined') {
+          currentParams = result;
+        }
       }
-      return params;
+      return currentParams;
     };
   }
 
