@@ -35,6 +35,15 @@
   var loginInputElement = document.querySelector('#loginInput');
   var passwordInputElement = document.querySelector('#passwordInput');
   var loginErrorElement = document.querySelector('#loginError');
+  var profileSectionElement = document.querySelector('#profileSection');
+  var profileListElement = document.querySelector('#profileList');
+  var profileResetElement = document.querySelector('#profileReset');
+
+  var PROFILE_STORAGE_KEY = 'virtualTourProfiles';
+  var MAX_PROFILES = 5;
+  var storageAvailable = isLocalStorageAvailable();
+  var savedProfiles = loadSavedProfiles();
+  renderProfileList(savedProfiles);
 
   if (mainMenuElement) {
     mainMenuElement.setAttribute('aria-hidden', 'false');
@@ -42,6 +51,20 @@
 
   if (loginInputElement) {
     loginInputElement.focus();
+  }
+
+  if (profileResetElement) {
+    profileResetElement.addEventListener('click', function() {
+      if (loginFormElement) {
+        loginFormElement.reset();
+      }
+      if (loginErrorElement) {
+        loginErrorElement.textContent = '';
+      }
+      if (loginInputElement) {
+        loginInputElement.focus();
+      }
+    });
   }
 
   if (mainMenuCardElement) {
@@ -470,37 +493,202 @@
     return null;
   }
 
+  function attemptAuthorization(login, password, options) {
+    options = options || {};
+    var fromStoredProfile = !!options.fromStoredProfile;
+    if (fromStoredProfile && loginInputElement) {
+      loginInputElement.value = login;
+    }
+
+    if (isValidCredentials(login, password)) {
+      handleSuccessfulLogin(login, password, { fromStoredProfile: fromStoredProfile });
+      return true;
+    }
+
+    handleFailedLogin(fromStoredProfile ?
+      'Не удалось войти через сохранённый профиль. Введите пароль вручную.' :
+      'Неверный логин или пароль. Попробуйте ещё раз.', {
+      login: login
+    });
+
+    if (fromStoredProfile) {
+      removeProfile(login);
+    }
+
+    return false;
+  }
+
+  function handleSuccessfulLogin(login, password, options) {
+    options = options || {};
+    isAuthorized = true;
+    document.body.classList.add('authorized');
+    if (mainMenuElement) {
+      mainMenuElement.classList.add('hidden');
+      mainMenuElement.setAttribute('aria-hidden', 'true');
+    }
+    if (loginErrorElement) {
+      loginErrorElement.textContent = '';
+    }
+    if (!options.fromStoredProfile && loginFormElement) {
+      loginFormElement.reset();
+    }
+    if (passwordInputElement) {
+      passwordInputElement.value = '';
+    }
+
+    storeProfile(login, password);
+    startAutorotate();
+  }
+
+  function handleFailedLogin(message, options) {
+    options = options || {};
+    if (loginErrorElement) {
+      loginErrorElement.textContent = message;
+    }
+    if (loginInputElement && options.login) {
+      loginInputElement.value = options.login;
+    }
+    if (passwordInputElement) {
+      passwordInputElement.value = '';
+      passwordInputElement.focus();
+    }
+    if (mainMenuCardElement) {
+      mainMenuCardElement.classList.remove('shake');
+      void mainMenuCardElement.offsetWidth;
+      mainMenuCardElement.classList.add('shake');
+    }
+  }
+
+  function isValidCredentials(login, password) {
+    return login === 'admin' && password === 'student';
+  }
+
+  function storeProfile(login, password) {
+    if (typeof login !== 'string' || !login || typeof password !== 'string') {
+      return;
+    }
+    savedProfiles = savedProfiles.filter(function(profile) {
+      return profile && profile.login !== login;
+    });
+    savedProfiles.unshift({
+      login: login,
+      password: password,
+      lastUsed: Date.now()
+    });
+    if (savedProfiles.length > MAX_PROFILES) {
+      savedProfiles = savedProfiles.slice(0, MAX_PROFILES);
+    }
+    persistProfiles();
+    renderProfileList(savedProfiles);
+  }
+
+  function removeProfile(login) {
+    savedProfiles = savedProfiles.filter(function(profile) {
+      return profile && profile.login !== login;
+    });
+    persistProfiles();
+    renderProfileList(savedProfiles);
+    if (loginErrorElement) {
+      loginErrorElement.textContent = '';
+    }
+    if (passwordInputElement) {
+      passwordInputElement.value = '';
+    }
+    if (loginInputElement) {
+      loginInputElement.focus();
+    }
+  }
+
+  function loadSavedProfiles() {
+    if (!storageAvailable) {
+      return [];
+    }
+    try {
+      var raw = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (!raw) {
+        return [];
+      }
+      var profiles = JSON.parse(raw);
+      if (!Array.isArray(profiles)) {
+        return [];
+      }
+      return profiles.filter(function(profile) {
+        return profile && typeof profile.login === 'string' && typeof profile.password === 'string';
+      }).sort(function(a, b) {
+        return (b.lastUsed || 0) - (a.lastUsed || 0);
+      }).slice(0, MAX_PROFILES);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function persistProfiles() {
+    if (!storageAvailable) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(savedProfiles));
+    } catch (err) {
+      // Swallow storage errors silently to avoid breaking login flow.
+    }
+  }
+
+  function renderProfileList(profiles) {
+    if (!profileSectionElement || !profileListElement) {
+      return;
+    }
+    profileListElement.innerHTML = '';
+    if (!profiles.length) {
+      profileSectionElement.setAttribute('hidden', '');
+      return;
+    }
+    profileSectionElement.removeAttribute('hidden');
+    profiles.forEach(function(profile) {
+      var item = document.createElement('div');
+      item.classList.add('profile-item');
+      item.setAttribute('role', 'listitem');
+
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.classList.add('profile-button');
+      button.textContent = profile.login;
+      button.addEventListener('click', function() {
+        attemptAuthorization(profile.login, profile.password, { fromStoredProfile: true });
+      });
+
+      var removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.classList.add('profile-remove');
+      removeButton.setAttribute('aria-label', 'Удалить профиль ' + profile.login);
+      removeButton.textContent = '×';
+      removeButton.addEventListener('click', function(event) {
+        event.stopPropagation();
+        removeProfile(profile.login);
+      });
+
+      item.appendChild(button);
+      item.appendChild(removeButton);
+      profileListElement.appendChild(item);
+    });
+  }
+
+  function isLocalStorageAvailable() {
+    try {
+      var testKey = '__tour_profiles_test__';
+      window.localStorage.setItem(testKey, '1');
+      window.localStorage.removeItem(testKey);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
   if (loginFormElement) {
     loginFormElement.addEventListener('submit', function(event) {
       event.preventDefault();
       var login = loginInputElement.value.trim();
       var password = passwordInputElement.value;
-      if (login === 'admin' && password === 'student') {
-        isAuthorized = true;
-        document.body.classList.add('authorized');
-        if (mainMenuElement) {
-          mainMenuElement.classList.add('hidden');
-          mainMenuElement.setAttribute('aria-hidden', 'true');
-        }
-        if (loginErrorElement) {
-          loginErrorElement.textContent = '';
-        }
-        loginFormElement.reset();
-        startAutorotate();
-      } else {
-        if (loginErrorElement) {
-          loginErrorElement.textContent = 'Неверный логин или пароль. Попробуйте ещё раз.';
-        }
-        if (passwordInputElement) {
-          passwordInputElement.value = '';
-          passwordInputElement.focus();
-        }
-        if (mainMenuCardElement) {
-          mainMenuCardElement.classList.remove('shake');
-          void mainMenuCardElement.offsetWidth;
-          mainMenuCardElement.classList.add('shake');
-        }
-      }
+      attemptAuthorization(login, password, { fromStoredProfile: false });
     });
   }
 
