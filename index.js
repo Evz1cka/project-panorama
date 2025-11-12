@@ -103,6 +103,10 @@
     document.body.classList.add('tooltip-fallback');
   }
 
+  if (data.settings.viewControlButtons) {
+    document.body.classList.add('view-control-buttons');
+  }
+
   // Viewer options.
   var viewerOpts = {
     controls: {
@@ -124,7 +128,15 @@
       { cubeMapPreviewUrl: urlPrefix + "/" + data.id + "/preview.jpg" });
     var geometry = new Marzipano.CubeGeometry(data.levels);
 
-    var limiter = Marzipano.RectilinearView.limit.traditional(data.faceSize, 100*Math.PI/180, 120*Math.PI/180);
+    var minFov = 35 * Math.PI / 180;
+    var maxVerticalFov = 100 * Math.PI / 180;
+    var maxHorizontalFov = 120 * Math.PI / 180;
+    var limiter = composeViewLimiters(
+      Marzipano.RectilinearView.limit.resolution(data.faceSize),
+      Marzipano.RectilinearView.limit.vfov(minFov, maxVerticalFov),
+      Marzipano.RectilinearView.limit.hfov(minFov, maxHorizontalFov),
+      Marzipano.RectilinearView.limit.pitch(-Math.PI / 2, Math.PI / 2)
+    );
     var view = new Marzipano.RectilinearView(data.initialViewParameters, limiter);
 
     var scene = viewer.createScene({
@@ -236,6 +248,16 @@
   controls.registerMethod('rightElement', new Marzipano.ElementPressControlMethod(viewRightElement,  'x',  velocity, friction), true);
   controls.registerMethod('inElement',    new Marzipano.ElementPressControlMethod(viewInElement,  'zoom', -velocity, friction), true);
   controls.registerMethod('outElement',   new Marzipano.ElementPressControlMethod(viewOutElement, 'zoom',  velocity, friction), true);
+
+  function composeViewLimiters() {
+    var limiters = Array.prototype.slice.call(arguments);
+    return function(params) {
+      for (var i = 0; i < limiters.length; i++) {
+        params = limiters[i](params);
+      }
+      return params;
+    };
+  }
 
   function sanitize(s) {
     return String(s)
